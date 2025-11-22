@@ -1,0 +1,10 @@
+{
+  "manifest_version": 2,
+  "name": "Link-It",
+  "version": "2.0",
+  "description": "Normalize weird URLs in selected text and let you open or copy them via context menu.",
+  "permissions": ["contextMenus", "tabs", "clipboardWrite", "<all_urls>"],
+  "background": {
+    "scripts": ["background.js"]
+  }
+}
