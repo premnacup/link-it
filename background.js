@@ -4,34 +4,13 @@ function normalizeWeirdUrl(raw) {
   if (!raw) return null;
 
   let text = raw.trim();
+  text = text.replace(/\s+/g, "");
 
   // Strip quotes/brackets around selection
   text = text.replace(/^["'(]+|[)"']+$/g, "");
 
   // xhttps:// -> https://
   text = text.replace(/\bx(https?:\/\/)/i, "$1");
-
-  // Fix spaced http/https like "h t t p s ://"
-  text = text.replace(/h\s*t\s*t\s*p\s*s?\s*:?\/+?/gi, (match) => {
-    const compact = match.replace(/\s+/g, "");
-    const hasS = compact.toLowerCase().startsWith("https");
-    return hasS ? "https://" : "http://";
-  });
-
-  // ttps:// -> https:// (missing h)
-  text = text.replace(/\bttps:\/\//i, "https://");
-
-  // Remove spaces right after protocol
-  text = text.replace(/(https?:\/\/)\s+/gi, "$1");
-
-  // Remove spaces in domain/path
-  text = text.replace(/(https?:\/\/[^\s]+)/gi, (full) => {
-    const parts = full.split("://");
-    if (parts.length === 2) {
-      return parts[0] + "://" + parts[1].replace(/\s+/g, "");
-    }
-    return full.replace(/\s+/g, "");
-  });
 
   const final = text.trim();
 
