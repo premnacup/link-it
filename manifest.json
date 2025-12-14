@@ -1,10 +1,44 @@
 {
-  "manifest_version": 2,
-  "name": "Link-It",
-  "version": "2.0",
-  "description": "Normalize weird URLs in selected text and let you open or copy them via context menu.",
-  "permissions": ["contextMenus", "tabs", "clipboardWrite", "<all_urls>"],
+  "manifest_version": 3,
+  "name": "Link-It (Link Normalizer)",
+  "version": "1.0.0",
+  "description": "Manually linkify weird links via right-click menu and normalize them.",
+  "permissions": [
+    "contextMenus",
+    "storage",
+    "scripting",
+    "tabs",
+    "notifications",
+    "clipboardWrite"
+  ],
+  "host_permissions": ["<all_urls>"],
   "background": {
     "scripts": ["background.js"]
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "action": {
+    "default_title": "Link-It"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "browser_style": false,
+    "open_in_tab": false
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "2m2w@example.com"
+    }
   }
 }
