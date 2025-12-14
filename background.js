@@ -1,29 +1,35 @@
 console.log("Link-It background script loaded");
 
-function normalizeWeirdUrl(raw) {
-  if (!raw) return null;
+function normalizeUrl(text) {
+  if (typeof text !== "string") return null;
 
-  let text = raw.trim();
-  text = text.replace(/\s+/g, "");
+  domainOnly = /^\w*\.com.*/gi;
+  pathOnly = /^w*\/.*\//gi;
 
-  // Strip quotes/brackets around selection
-  text = text.replace(/^["'(]+|[)"']+$/g, "");
+  text = text.trim().replace(/\s+/g, "");
 
-  // xhttps:// -> https://
-  text = text.replace(/\bx(https?:\/\/)/i, "$1");
+  // Remove quotes and brackets around the selection
+  text = text.replace(/["'()"]/g, "");
 
-  const final = text.trim();
+  if (text.match(domainOnly)) {
+    console.log("Link-It: domain only");
+    text = "https://" + text;
+    return text;
+  }
+  // Replace xhttps:// with https://
+  text = text.replace(/^\w*(https?:\/+)/gi, "$1");
+
+  const normalizedText = text.trim();
 
   // Must look like a URL with at least one dot
-  if (!/^https?:\/\/\S+\.\S+/.test(final)) {
+  if (!/^https?:\/\/\S+\.\S+/.test(normalizedText)) {
     return null;
   }
 
-  return final;
+  return normalizedText;
 }
 
-// --- Create context menu items once ---
-
+// --- Create context menu items ---
 browser.contextMenus.create({
   id: "linkit-open",
   title: "Link-It: Open normalized URL in new tab",
@@ -36,32 +42,58 @@ browser.contextMenus.create({
   contexts: ["selection"],
 });
 
-// --- Handle clicks ---
+browser.contextMenus.create({
+  id: "linkit-open-default",
+  title: "Link-It: Open normalized URL in new tab (default base URL)",
+  contexts: ["selection"],
+});
 
-browser.contextMenus.onClicked.addListener((info, tab) => {
+// --- Handle clicks ---
+browser.contextMenus.onClicked.addListener((info) => {
   if (!info.selectionText) return;
 
-  const normalized = normalizeWeirdUrl(info.selectionText);
+  const normalized = normalizeUrl(info.selectionText);
 
   console.log("Link-It selection:", info.selectionText, "→", normalized);
 
   if (!normalized) {
-    // Just log for now (no notifications)
     console.warn("Link-It: no valid URL found in selection");
+    browser.notifications
+      .create({
+        type: "basic",
+        title: "Link-It",
+        message: "No valid URL found in selection",
+        iconUrl: browser.runtime.getURL("icons/icon-128.png"),
+      })
+      .catch((err) =>
+        console.error("Link-It: failed to show notification", err)
+      );
     return;
   }
 
-  if (info.menuItemId === "linkit-open") {
-    browser.tabs.create({ url: normalized });
-  } else if (info.menuItemId === "linkit-copy") {
-    // Clipboard from background is a bit flaky, but we'll try
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(normalized).then(
-        () => console.log("Link-It: copied to clipboard", normalized),
-        (err) => console.error("Link-It: failed to copy", err)
-      );
-    } else {
-      console.warn("Link-It: navigator.clipboard not available");
-    }
+  switch (info.menuItemId) {
+    case "linkit-open":
+      browser.tabs.create({ url: normalized });
+      break;
+    case "linkit-copy":
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(normalized);
+      } else {
+        const notification = browser.notifications.create({
+          type: "basic",
+          title: "Link-It",
+          message: "navigator.clipboard not available",
+          iconUrl: browser.runtime.getURL("icons/icon-128.png"),
+        });
+        notification.catch((err) =>
+          console.error("Link-It: failed to show notification", err)
+        );
+      }
+      break;
+    case "linkit-open-default":
+      browser.tabs.create({ url: info.selectionText });
+      break;
+    default:
+      break;
   }
 });
